@@ -1,4 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
      width="{{.Width}}" height="{{.Height}}"
      viewBox="0 0 {{.Width}} {{.Height}}"
      role="img" aria-label="Developer metrics">
@@ -9,27 +10,49 @@
     .stat-label { fill: #7d8590; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 12px; }
     .stat-value { fill: #e6edf3; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; font-weight: 600; }
     .lang-label { fill: #e6edf3; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13px; }
+    .footer { fill: #7d8590; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 11px; }
   </style>
 
   <rect class="card" x="0.5" y="0.5" width="{{.Width}}" height="{{.Height}}" />
 
-  <text class="title" x="24" y="40">{{.Title}}</text>
-  <text class="subtitle" x="24" y="62">{{.Subtitle}}</text>
+  {{- if .AvatarURL }}
+  <defs>
+    <clipPath id="avatarClip">
+      <circle cx="44" cy="44" r="24" />
+    </clipPath>
+  </defs>
 
-  <text class="stat-label" x="24" y="96">Repos</text>
-  <text class="stat-value" x="24" y="114">{{.Repos}}</text>
+  <image
+    x="20"
+    y="20"
+    width="48"
+    height="48"
+    clip-path="url(#avatarClip)"
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+    href="{{.AvatarURL}}"
+  />
+  {{- else }}
+    <circle cx="44" cy="44" r="24" fill="#161b22" />
+  {{- end }}
 
-  <text class="stat-label" x="180" y="96">Stars</text>
-  <text class="stat-value" x="180" y="114">{{.Stars}}</text>
+  <text class="title" x="80" y="40">{{.Title}}</text>
+  <text class="subtitle" x="80" y="62">{{.Subtitle}}</text>
 
-  <text class="stat-label" x="336" y="96">Followers</text>
-  <text class="stat-value" x="336" y="114">{{.Followers}}</text>
+  <text class="stat-label" x="24" y="100">Repos</text>
+  <text class="stat-value" x="24" y="118">{{.Repos}}</text>
 
-  <text class="subtitle" x="24" y="140">Top languages</text>
+  <text class="stat-label" x="180" y="100">Stars</text>
+  <text class="stat-value" x="180" y="118">{{.Stars}}</text>
+
+  <text class="stat-label" x="336" y="100">Followers</text>
+  <text class="stat-value" x="336" y="118">{{.Followers}}</text>
+
+  <text class="subtitle" x="24" y="142">Top languages</text>
 
   {{- $startX := 24.0 }}
   {{- $totalWidth := 480.0 }}
-  {{- $y := 150 }}
+  {{- $y := 152 }}
   {{- $height := 10.0 }}
   {{- $x := $startX }}
 
@@ -49,5 +72,9 @@
   </text>
   <text class="lang-label" x="24" y="220">
     {{if gt (len .Languages) 2}}{{(index .Languages 2).Name}} ({{printf "%.0f" (index .Languages 2).Percentage}}%){{end}}
+  </text>
+
+  <text class="footer" x="{{.Width}}" y="{{.Height}}" dx="-20" dy="-16" text-anchor="end">
+    devmetrics · github.com/vukan322/devmetrics
   </text>
 </svg>

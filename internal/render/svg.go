@@ -33,6 +33,7 @@ type devcardViewModel struct {
 	Height    int
 	Title     string
 	Subtitle  string
+	AvatarURL string
 	Repos     int
 	Stars     int
 	Followers int
@@ -41,8 +42,6 @@ type devcardViewModel struct {
 }
 
 func RenderSVG(stats core.DevStats) ([]byte, error) {
-	colors := []string{"#238636", "#1f6feb", "#a371f7", "#db6d28", "#8b949e"}
-
 	title := stats.Identity.Name
 	if title == "" {
 		title = stats.Identity.Username
@@ -55,11 +54,14 @@ func RenderSVG(stats core.DevStats) ([]byte, error) {
 		langs = langs[:3]
 	}
 
+	colors := []string{"#238636", "#1f6feb", "#a371f7", "#db6d28", "#8b949e"}
+
 	vm := devcardViewModel{
 		Width:     svgWidth,
 		Height:    svgHeight,
 		Title:     title,
 		Subtitle:  subtitle,
+		AvatarURL: stats.Identity.Avatar,
 		Repos:     stats.Totals.PublicRepos,
 		Stars:     stats.Totals.Stars,
 		Followers: stats.Totals.Followers,

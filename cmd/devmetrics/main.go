@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/vukan322/devmetrics/internal/providers/demo"
+	githubprovider "github.com/vukan322/devmetrics/internal/providers/github"
 	"github.com/vukan322/devmetrics/internal/render"
 )
 
@@ -29,7 +29,12 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	provider := demo.New()
+	token := os.Getenv("GITHUB_TOKEN")
+	if token == "" {
+		log.Println("warning: GITHUB_TOKEN not set, using unauthenticated GitHub API (rate limited)")
+	}
+
+	provider := githubprovider.New(token)
 
 	stats, err := provider.Fetch(ctx, user)
 	if err != nil {
