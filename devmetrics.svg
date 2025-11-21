@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="800" height="260"
+     viewBox="0 0 800 260"
+     role="img" aria-label="Developer metrics">
+  <style>
+    .card { fill: #0d1117; stroke: #30363d; stroke-width: 1; rx: 12; ry: 12; }
+    .title { fill: #e6edf3; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 18px; font-weight: 600; }
+    .subtitle { fill: #7d8590; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13px; }
+    .stat-label { fill: #7d8590; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 12px; }
+    .stat-value { fill: #e6edf3; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; font-weight: 600; }
+    .lang-label { fill: #e6edf3; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13px; }
+  </style>
+
+  <rect class="card" x="0.5" y="0.5" width="800" height="260" />
+
+  <text class="title" x="24" y="40">Demo Developer</text>
+  <text class="subtitle" x="24" y="62">demo:vukan322</text>
+
+  <text class="stat-label" x="24" y="96">Repos</text>
+  <text class="stat-value" x="24" y="114">12</text>
+
+  <text class="stat-label" x="180" y="96">Stars</text>
+  <text class="stat-value" x="180" y="114">32</text>
+
+  <text class="stat-label" x="336" y="96">Followers</text>
+  <text class="stat-value" x="336" y="114">10</text>
+
+  <text class="subtitle" x="24" y="140">Top languages</text>
+      <rect x="24" y="150" width="336" height="10" fill="#238636" />
+      <rect x="360" y="150" width="96" height="10" fill="#1f6feb" />
+      <rect x="456" y="150" width="48" height="10" fill="#a371f7" />
+
+  <text class="lang-label" x="24" y="180">
+    Go (70%)
+  </text>
+  <text class="lang-label" x="24" y="200">
+    TypeScript (20%)
+  </text>
+  <text class="lang-label" x="24" y="220">
+    Lua (10%)
+  </text>
+</svg>

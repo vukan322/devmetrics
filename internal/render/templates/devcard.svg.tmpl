@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="{{.Width}}" height="{{.Height}}"
+     viewBox="0 0 {{.Width}} {{.Height}}"
+     role="img" aria-label="Developer metrics">
+  <style>
+    .card { fill: #0d1117; stroke: #30363d; stroke-width: 1; rx: 12; ry: 12; }
+    .title { fill: #e6edf3; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 18px; font-weight: 600; }
+    .subtitle { fill: #7d8590; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13px; }
+    .stat-label { fill: #7d8590; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 12px; }
+    .stat-value { fill: #e6edf3; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; font-weight: 600; }
+    .lang-label { fill: #e6edf3; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13px; }
+  </style>
+
+  <rect class="card" x="0.5" y="0.5" width="{{.Width}}" height="{{.Height}}" />
+
+  <text class="title" x="24" y="40">{{.Title}}</text>
+  <text class="subtitle" x="24" y="62">{{.Subtitle}}</text>
+
+  <text class="stat-label" x="24" y="96">Repos</text>
+  <text class="stat-value" x="24" y="114">{{.Repos}}</text>
+
+  <text class="stat-label" x="180" y="96">Stars</text>
+  <text class="stat-value" x="180" y="114">{{.Stars}}</text>
+
+  <text class="stat-label" x="336" y="96">Followers</text>
+  <text class="stat-value" x="336" y="114">{{.Followers}}</text>
+
+  <text class="subtitle" x="24" y="140">Top languages</text>
+
+  {{- $startX := 24.0 }}
+  {{- $totalWidth := 480.0 }}
+  {{- $y := 150 }}
+  {{- $height := 10.0 }}
+  {{- $x := $startX }}
+
+  {{- range $i, $lang := .Languages }}
+    {{- if lt $i (len $.Colors) }}
+      {{- $w := mulf $totalWidth (divf $lang.Percentage 100.0) }}
+      <rect x="{{$x}}" y="{{$y}}" width="{{$w}}" height="{{$height}}" fill="{{index $.Colors $i}}" />
+      {{- $x = addf $x $w }}
+    {{- end }}
+  {{- end }}
+
+  <text class="lang-label" x="24" y="180">
+    {{if len .Languages}}{{(index .Languages 0).Name}} ({{printf "%.0f" (index .Languages 0).Percentage}}%){{end}}
+  </text>
+  <text class="lang-label" x="24" y="200">
+    {{if gt (len .Languages) 1}}{{(index .Languages 1).Name}} ({{printf "%.0f" (index .Languages 1).Percentage}}%){{end}}
+  </text>
+  <text class="lang-label" x="24" y="220">
+    {{if gt (len .Languages) 2}}{{(index .Languages 2).Name}} ({{printf "%.0f" (index .Languages 2).Percentage}}%){{end}}
+  </text>
+</svg>
