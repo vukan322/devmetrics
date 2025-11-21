@@ -84,7 +84,7 @@ func (p *Provider) Fetch(ctx context.Context, handle string) (core.DevStats, err
 			Name:     pickName(user),
 			Username: user.Login,
 			Avatar:   avatarData,
-			Handles:  []string{"github:" + user.Login},
+			Handles:  []string{"github: " + user.Login},
 		},
 		Totals: totals,
 		Activity: core.Activity{
