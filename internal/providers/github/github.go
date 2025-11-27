@@ -165,13 +165,22 @@ func fetchAvatar(ctx context.Context, client *http.Client, avatarURL string) (st
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return "", fmt.Errorf("avatar fetch failed with status %d", resp.StatusCode)
+	}
+
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("read avatar body: %w", err)
 	}
 
+	contentType := resp.Header.Get("Content-Type")
+	if contentType == "" {
+		contentType = http.DetectContentType(data)
+	}
+
 	encoded := base64.StdEncoding.EncodeToString(data)
-	return "data:image/png;base64," + encoded, nil
+	return fmt.Sprintf("data:%s;base64,%s", contentType, encoded), nil
 }
 
 func (p *Provider) applyHeaders(req *http.Request) {

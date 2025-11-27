@@ -32,13 +32,13 @@
   />
 
   <text class="title" x="80" y="40">Luka Vukanović</text>
-  <text class="subtitle" x="80" y="62">github:vukan322</text>
+  <text class="subtitle" x="80" y="62">github: vukan322</text>
 
   <text class="stat-label" x="24" y="100">Repos</text>
   <text class="stat-value" x="24" y="118">7</text>
 
   <text class="stat-label" x="180" y="100">Stars</text>
-  <text class="stat-value" x="180" y="118">41</text>
+  <text class="stat-value" x="180" y="118">38</text>
 
   <text class="stat-label" x="336" y="100">Followers</text>
   <text class="stat-value" x="336" y="118">10</text>
