@@ -12,7 +12,7 @@ import (
 
 const (
 	svgWidth  = 800
-	svgHeight = 260
+	svgHeight = 280
 )
 
 //go:embed templates/devcard.svg.tmpl
@@ -21,24 +21,31 @@ var devcardTemplate string
 var devcardTmpl = template.Must(
 	template.New("devcard").
 		Funcs(template.FuncMap{
-			"addf": func(a, b float64) float64 { return a + b },
-			"divf": func(a, b float64) float64 { return a / b },
-			"mulf": func(a, b float64) float64 { return a * b },
+			"addf":    func(a, b float64) float64 { return a + b },
+			"subf":    func(a, b float64) float64 { return a - b },
+			"divf":    func(a, b float64) float64 { return a / b },
+			"mulf":    func(a, b float64) float64 { return a * b },
+			"float64": func(i int) float64 { return float64(i) },
+			"divInt":  func(a, b int) int { return a / b },
+			"modInt":  func(a, b int) int { return a % b },
 		}).
 		Parse(devcardTemplate),
 )
 
 type devcardViewModel struct {
-	Width     int
-	Height    int
-	Title     string
-	Subtitle  string
-	AvatarURL string
-	Repos     int
-	Stars     int
-	Followers int
-	Languages []core.LanguageStat
-	Colors    []string
+	Width            int
+	Height           int
+	Title            string
+	Subtitle         string
+	AvatarURL        string
+	Repos            int
+	Stars            int
+	Followers        int
+	ContributedRepos int
+	JoinedAgo        string
+	TotalLanguages   int
+	Languages        []core.LanguageStat
+	Colors           []string
 }
 
 func RenderSVG(stats core.DevStats) ([]byte, error) {
@@ -46,33 +53,38 @@ func RenderSVG(stats core.DevStats) ([]byte, error) {
 	if title == "" {
 		title = stats.Identity.Username
 	}
-
 	subtitle := strings.Join(stats.Identity.Handles, " · ")
-
 	langs := stats.Activity.TopLanguages
-	if len(langs) > 3 {
-		langs = langs[:3]
+	colors := []string{
+		"#2563EB", // Blue
+		"#22C55E", // Green
+		"#F97316", // Orange
+		"#A855F7", // Purple
+		"#EF4444", // Red
+		"#06B6D4", // Teal
+		"#FACC15", // Yellow
+		"#EC4899", // Pink
+		"#4B5563", // Slate
+		"#9CA3AF", // Gray (Others)
 	}
-
-	colors := []string{"#238636", "#1f6feb", "#a371f7", "#db6d28", "#8b949e"}
-
 	vm := devcardViewModel{
-		Width:     svgWidth,
-		Height:    svgHeight,
-		Title:     title,
-		Subtitle:  subtitle,
-		AvatarURL: stats.Identity.Avatar,
-		Repos:     stats.Totals.PublicRepos,
-		Stars:     stats.Totals.Stars,
-		Followers: stats.Totals.Followers,
-		Languages: langs,
-		Colors:    colors,
+		Width:            svgWidth,
+		Height:           svgHeight,
+		Title:            title,
+		Subtitle:         subtitle,
+		AvatarURL:        stats.Identity.Avatar,
+		Repos:            stats.Totals.PublicRepos,
+		Stars:            stats.Totals.Stars,
+		Followers:        stats.Totals.Followers,
+		ContributedRepos: stats.Totals.ContributedRepos,
+		JoinedAgo:        stats.Totals.JoinedAgo,
+		TotalLanguages:   stats.Totals.TotalLanguages,
+		Languages:        langs,
+		Colors:           colors,
 	}
-
 	var buf bytes.Buffer
 	if err := devcardTmpl.Execute(&buf, vm); err != nil {
 		return nil, fmt.Errorf("render svg: %w", err)
 	}
-
 	return buf.Bytes(), nil
 }

@@ -10,11 +10,14 @@ type Identity struct {
 }
 
 type Totals struct {
-	PublicRepos  int
-	PrivateRepos int
-	Stars        int
-	Followers    int
-	Following    int
+	PublicRepos      int
+	PrivateRepos     int
+	Stars            int
+	Followers        int
+	Following        int
+	ContributedRepos int
+	JoinedAgo        string
+	TotalLanguages   int
 }
 
 type LanguageStat struct {

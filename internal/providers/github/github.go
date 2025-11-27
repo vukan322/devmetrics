@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/vukan322/devmetrics/internal/core"
@@ -38,12 +39,13 @@ func (p *Provider) Name() string {
 }
 
 type githubUser struct {
-	Login       string `json:"login"`
-	Name        string `json:"name"`
-	AvatarURL   string `json:"avatar_url"`
-	PublicRepos int    `json:"public_repos"`
-	Followers   int    `json:"followers"`
-	Following   int    `json:"following"`
+	Login       string    `json:"login"`
+	Name        string    `json:"name"`
+	AvatarURL   string    `json:"avatar_url"`
+	PublicRepos int       `json:"public_repos"`
+	Followers   int       `json:"followers"`
+	Following   int       `json:"following"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 type githubRepo struct {
@@ -64,15 +66,23 @@ func (p *Provider) Fetch(ctx context.Context, handle string) (core.DevStats, err
 		return core.DevStats{}, fmt.Errorf("github: fetch repos: %w", err)
 	}
 
-	totals := core.Totals{
-		PublicRepos:  user.PublicRepos,
-		PrivateRepos: countPrivate(repos),
-		Stars:        sumStars(repos),
-		Followers:    user.Followers,
-		Following:    user.Following,
+	contributedCount, err := p.fetchContributedRepos(ctx, handle)
+	if err != nil {
+		contributedCount = 0
 	}
 
-	topLangs := computeLanguages(repos)
+	topLangs, totalLangs := computeLanguages(repos)
+
+	totals := core.Totals{
+		PublicRepos:      user.PublicRepos,
+		PrivateRepos:     countPrivate(repos),
+		Stars:            sumStars(repos),
+		Followers:        user.Followers,
+		Following:        user.Following,
+		ContributedRepos: contributedCount,
+		JoinedAgo:        formatJoinedAgo(user.CreatedAt),
+		TotalLanguages:   totalLangs,
+	}
 
 	avatarData, err := fetchAvatar(ctx, p.client, user.AvatarURL)
 	if err != nil {
@@ -88,12 +98,60 @@ func (p *Provider) Fetch(ctx context.Context, handle string) (core.DevStats, err
 		},
 		Totals: totals,
 		Activity: core.Activity{
-			ContributionsPerDay: nil, // TODO: /repos activity graph later
+			ContributionsPerDay: nil,
 			TopLanguages:        topLangs,
 		},
 	}
 
 	return stats, nil
+}
+
+func formatJoinedAgo(created time.Time) string {
+	years := time.Since(created).Hours() / 24 / 365
+	if years < 1 {
+		months := int(time.Since(created).Hours() / 24 / 30)
+		if months < 1 {
+			return "this month"
+		}
+		if months == 1 {
+			return "1 month ago"
+		}
+		return fmt.Sprintf("%d months ago", months)
+	}
+	y := int(years)
+	if y == 1 {
+		return "1 year ago"
+	}
+	return fmt.Sprintf("%d years ago", y)
+}
+func (p *Provider) fetchContributedRepos(ctx context.Context, handle string) (int, error) {
+	endpoint := fmt.Sprintf("%s/search/issues?q=author:%s+type:pr+is:merged+-user:%s&per_page=1",
+		p.baseURL, url.QueryEscape(handle), url.QueryEscape(handle))
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return 0, fmt.Errorf("new request: %w", err)
+	}
+	p.applyHeaders(req)
+
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return 0, fmt.Errorf("do request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return 0, fmt.Errorf("unexpected status %d", resp.StatusCode)
+	}
+
+	var result struct {
+		TotalCount int `json:"total_count"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return 0, fmt.Errorf("decode response: %w", err)
+	}
+
+	return result.TotalCount, nil
 }
 
 func (p *Provider) fetchUser(ctx context.Context, handle string) (*githubUser, error) {
@@ -127,30 +185,39 @@ func (p *Provider) fetchUser(ctx context.Context, handle string) (*githubUser, e
 }
 
 func (p *Provider) fetchRepos(ctx context.Context, handle string) ([]githubRepo, error) {
-	endpoint := fmt.Sprintf("%s/users/%s/repos?per_page=100&sort=updated", p.baseURL, url.PathEscape(handle))
+	var allRepos []githubRepo
+	nextURL := fmt.Sprintf("%s/users/%s/repos?per_page=100&sort=updated", p.baseURL, url.PathEscape(handle))
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
-	if err != nil {
-		return nil, fmt.Errorf("new request: %w", err)
+	for nextURL != "" {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, nextURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("new request: %w", err)
+		}
+		p.applyHeaders(req)
+
+		resp, err := p.client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("do request: %w", err)
+		}
+
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			resp.Body.Close()
+			return nil, fmt.Errorf("unexpected status %d from %s", resp.StatusCode, nextURL)
+		}
+
+		var repos []githubRepo
+		if err := json.NewDecoder(resp.Body).Decode(&repos); err != nil {
+			resp.Body.Close()
+			return nil, fmt.Errorf("decode repos response: %w", err)
+		}
+		resp.Body.Close()
+
+		allRepos = append(allRepos, repos...)
+
+		nextURL = extractNextLink(resp.Header.Get("Link"))
 	}
-	p.applyHeaders(req)
 
-	resp, err := p.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("do request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("unexpected status %d from %s", resp.StatusCode, endpoint)
-	}
-
-	var repos []githubRepo
-	if err := json.NewDecoder(resp.Body).Decode(&repos); err != nil {
-		return nil, fmt.Errorf("decode repos response: %w", err)
-	}
-
-	return repos, nil
+	return allRepos, nil
 }
 
 func fetchAvatar(ctx context.Context, client *http.Client, avatarURL string) (string, error) {
@@ -209,7 +276,7 @@ func countPrivate(repos []githubRepo) int {
 	return n
 }
 
-func computeLanguages(repos []githubRepo) []core.LanguageStat {
+func computeLanguages(repos []githubRepo) ([]core.LanguageStat, int) {
 	counts := make(map[string]int)
 	for _, r := range repos {
 		if r.Language == "" {
@@ -218,8 +285,10 @@ func computeLanguages(repos []githubRepo) []core.LanguageStat {
 		counts[r.Language]++
 	}
 	if len(counts) == 0 {
-		return nil
+		return nil, 0
 	}
+
+	totalLanguages := len(counts)
 
 	var total int
 	for _, c := range counts {
@@ -239,11 +308,22 @@ func computeLanguages(repos []githubRepo) []core.LanguageStat {
 		return langs[i].Percentage > langs[j].Percentage
 	})
 
-	if len(langs) > 5 {
-		langs = langs[:5]
+	if len(langs) <= 9 {
+		return langs, totalLanguages
 	}
 
-	return langs
+	top9 := langs[:9]
+	var othersTotal float64
+	for i := 9; i < len(langs); i++ {
+		othersTotal += langs[i].Percentage
+	}
+
+	result := append(top9, core.LanguageStat{
+		Name:       "Others",
+		Percentage: othersTotal,
+	})
+
+	return result, totalLanguages
 }
 
 func pickName(u *githubUser) string {
@@ -251,4 +331,76 @@ func pickName(u *githubUser) string {
 		return u.Name
 	}
 	return u.Login
+}
+
+func extractNextLink(linkHeader string) string {
+	if linkHeader == "" {
+		return ""
+	}
+
+	for _, link := range splitLinks(linkHeader) {
+		parts := splitLinkParts(link)
+		if len(parts) == 2 && contains(parts[1], `rel="next"`) {
+			url := strings.Trim(strings.TrimSpace(parts[0]), "<>")
+			return url
+		}
+	}
+	return ""
+}
+
+func splitLinks(s string) []string {
+	var links []string
+	current := ""
+	inBracket := false
+
+	for _, ch := range s {
+		if ch == '<' {
+			inBracket = true
+		} else if ch == '>' {
+			inBracket = false
+		} else if ch == ',' && !inBracket {
+			links = append(links, current)
+			current = ""
+			continue
+		}
+		current += string(ch)
+	}
+	if current != "" {
+		links = append(links, current)
+	}
+	return links
+}
+
+func splitLinkParts(s string) []string {
+	parts := make([]string, 0, 2)
+	current := ""
+
+	for _, ch := range s {
+		if ch == ';' {
+			parts = append(parts, current)
+			current = ""
+			continue
+		}
+		current += string(ch)
+	}
+	if current != "" {
+		parts = append(parts, current)
+	}
+	return parts
+}
+
+func contains(s, substr string) bool {
+	return len(s) >= len(substr) && findSubstring(s, substr) >= 0
+}
+
+func findSubstring(s, substr string) int {
+	if len(substr) == 0 {
+		return 0
+	}
+	for i := 0; i <= len(s)-len(substr); i++ {
+		if s[i:i+len(substr)] == substr {
+			return i
+		}
+	}
+	return -1
 }

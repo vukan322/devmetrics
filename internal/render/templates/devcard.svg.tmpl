@@ -5,11 +5,13 @@
      role="img" aria-label="Developer metrics">
   <style>
     .card { fill: #0d1117; stroke: #30363d; stroke-width: 1; rx: 12; ry: 12; }
+    .stat-card { fill: #161b22; stroke: #30363d; stroke-width: 1; rx: 6; ry: 6; }
     .title { fill: #e6edf3; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 18px; font-weight: 600; }
     .subtitle { fill: #7d8590; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13px; }
     .stat-label { fill: #7d8590; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 12px; }
     .stat-value { fill: #e6edf3; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; font-weight: 600; }
-    .lang-label { fill: #e6edf3; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13px; }
+    .lang-label { fill: #e6edf3; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 12px; }
+    .lang-dot { r: 4; }
     .footer { fill: #7d8590; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 11px; }
   </style>
 
@@ -21,7 +23,6 @@
       <circle cx="44" cy="44" r="24" />
     </clipPath>
   </defs>
-
   <image
     x="20"
     y="20"
@@ -39,42 +40,67 @@
   <text class="title" x="80" y="40">{{.Title}}</text>
   <text class="subtitle" x="80" y="62">{{.Subtitle}}</text>
 
-  <text class="stat-label" x="24" y="100">Repos</text>
-  <text class="stat-value" x="24" y="118">{{.Repos}}</text>
+  <rect class="stat-card" x="24" y="88" width="108" height="44" />
+  <text class="stat-label" x="78" y="104" text-anchor="middle">Repos</text>
+  <text class="stat-value" x="78" y="122" text-anchor="middle">{{.Repos}}</text>
 
-  <text class="stat-label" x="180" y="100">Stars</text>
-  <text class="stat-value" x="180" y="118">{{.Stars}}</text>
+  <rect class="stat-card" x="152" y="88" width="108" height="44" />
+  <text class="stat-label" x="206" y="104" text-anchor="middle">Stars</text>
+  <text class="stat-value" x="206" y="122" text-anchor="middle">{{.Stars}}</text>
 
-  <text class="stat-label" x="336" y="100">Followers</text>
-  <text class="stat-value" x="336" y="118">{{.Followers}}</text>
+  <rect class="stat-card" x="280" y="88" width="108" height="44" />
+  <text class="stat-label" x="334" y="104" text-anchor="middle">Followers</text>
+  <text class="stat-value" x="334" y="122" text-anchor="middle">{{.Followers}}</text>
 
-  <text class="subtitle" x="24" y="142">Top languages</text>
+  <rect class="stat-card" x="408" y="88" width="108" height="44" />
+  <text class="stat-label" x="462" y="104" text-anchor="middle">Contributed</text>
+  <text class="stat-value" x="462" y="122" text-anchor="middle">{{.ContributedRepos}}</text>
 
-  {{- $startX := 24.0 }}
-  {{- $totalWidth := 480.0 }}
-  {{- $y := 152 }}
-  {{- $height := 10.0 }}
+  <rect class="stat-card" x="536" y="88" width="108" height="44" />
+  <text class="stat-label" x="590" y="104" text-anchor="middle">Joined</text>
+  <text class="stat-value" x="590" y="122" text-anchor="middle">{{.JoinedAgo}}</text>
+
+  <rect class="stat-card" x="664" y="88" width="108" height="44" />
+  <text class="stat-label" x="718" y="104" text-anchor="middle">Languages</text>
+  <text class="stat-value" x="718" y="122" text-anchor="middle">{{.TotalLanguages}}</text>
+
+  <text class="subtitle" x="24" y="158" style="fill: #e6edf3;">Top languages</text>
+
+  {{- $margin := 26.5 }}
+  {{- $svgWidth := float64 .Width }}
+  {{- $availableWidth := subf $svgWidth (mulf $margin 2.0) }}
+  {{- $startX := $margin }}
+  {{- $barY := 176.0 }}
+  {{- $height := 8.0 }}
   {{- $x := $startX }}
-
   {{- range $i, $lang := .Languages }}
-    {{- if lt $i (len $.Colors) }}
-      {{- $w := mulf $totalWidth (divf $lang.Percentage 100.0) }}
-      <rect x="{{$x}}" y="{{$y}}" width="{{$w}}" height="{{$height}}" fill="{{index $.Colors $i}}" />
+    {{- if lt $i 10 }}
+      {{- $w := mulf $availableWidth (divf $lang.Percentage 100.0) }}
+      {{- $colorIdx := $i }}
+      <rect x="{{$x}}" y="{{$barY}}" width="{{$w}}" height="{{$height}}" fill="{{index $.Colors $colorIdx}}" rx="1" />
       {{- $x = addf $x $w }}
     {{- end }}
   {{- end }}
 
-  <text class="lang-label" x="24" y="180">
-    {{if len .Languages}}{{(index .Languages 0).Name}} ({{printf "%.0f" (index .Languages 0).Percentage}}%){{end}}
-  </text>
-  <text class="lang-label" x="24" y="200">
-    {{if gt (len .Languages) 1}}{{(index .Languages 1).Name}} ({{printf "%.0f" (index .Languages 1).Percentage}}%){{end}}
-  </text>
-  <text class="lang-label" x="24" y="220">
-    {{if gt (len .Languages) 2}}{{(index .Languages 2).Name}} ({{printf "%.0f" (index .Languages 2).Percentage}}%){{end}}
-  </text>
+  {{- $langX := 40.0 }}
+  {{- $langY := 204.0 }}
+  {{- $langSpacing := 160.0 }}
+  {{- $perRow := 5 }}
+  {{- range $i, $lang := .Languages }}
+    {{- if lt $i 10 }}
+      {{- $colorIdx := $i }}
+      {{- $row := divInt $i $perRow }}
+      {{- $col := modInt $i $perRow }}
+      {{- $currentX := addf $langX (mulf (float64 $col) $langSpacing) }}
+      {{- $currentY := addf $langY (mulf (float64 $row) 20.0) }}
+      <circle class="lang-dot" cx="{{$currentX}}" cy="{{addf $currentY -3.0}}" fill="{{index $.Colors $colorIdx}}" />
+      <text class="lang-label" x="{{addf $currentX 10.0}}" y="{{$currentY}}">
+        {{$lang.Name}} {{printf "%.0f" $lang.Percentage}}%
+      </text>
+    {{- end }}
+  {{- end }}
 
-  <text class="footer" x="{{.Width}}" y="{{.Height}}" dx="-20" dy="-16" text-anchor="end">
+  <text class="footer" x="{{divf (float64 .Width) 2.0}}" y="{{.Height}}" dy="-12" text-anchor="middle">
     devmetrics · github.com/vukan322/devmetrics
   </text>
 </svg>
