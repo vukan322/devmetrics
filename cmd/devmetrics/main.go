@@ -8,11 +8,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/joho/godotenv"
 	githubprovider "github.com/vukan322/devmetrics/internal/providers/github"
 	"github.com/vukan322/devmetrics/internal/render"
 )
 
 func main() {
+	_ = godotenv.Load()
+
 	var (
 		user   string
 		output string
