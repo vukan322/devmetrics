@@ -156,7 +156,10 @@
     <rect x="{{$px}}" y="{{$prBarY}}" width="{{$prClosedW}}" height="{{$barHeight}}" rx="1" fill="#da3633" />
   {{- end }}
 
-  <text class="footer" x="{{divf (float64 .Width) 2.0}}" y="{{.Height}}" dy="-12" text-anchor="middle">
+  <text class="footer"
+      x="{{divf (float64 .Width) 2.0}}"
+      y="{{subf (float64 .Height) 20}}"
+      text-anchor="middle">
     devmetrics · github.com/vukan322/devmetrics
   </text>
 </svg>
