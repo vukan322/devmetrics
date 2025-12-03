@@ -15,7 +15,13 @@
     .footer { fill: #7d8590; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 11px; }
   </style>
 
-  <rect class="card" x="0.5" y="0.5" width="{{.Width}}" height="{{.Height}}" />
+  <rect
+    class="card"
+    x="0.5"
+    y="0.5"
+    width="{{subf (float64 .Width) 1}}"
+    height="{{subf (float64 .Height) 1}}"
+  />
 
   {{- if .AvatarURL }}
   <defs>
