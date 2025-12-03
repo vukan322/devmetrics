@@ -111,7 +111,7 @@
   {{- $issuesTotal := addf (float64 .IssuesOpen) (float64 .IssuesClosed) }}
   {{- if gt $issuesTotal 0.0 }}
     <text class="stat-label" x="24" y="270">
-      Issues ({{.IssuesOpen}} open · {{.IssuesClosed}} closed)
+      Issues ( {{.IssuesOpen}} open · {{.IssuesClosed}} closed )
     </text>
     
     {{- $ix := $sectionX }}
@@ -125,7 +125,7 @@
   {{- $prTotal := addf (float64 .PROpen) (addf (float64 .PRMerged) (float64 .PRClosed)) }}
   {{- if gt $prTotal 0.0 }}
     <text class="stat-label" x="24" y="305">
-      Pull requests ({{.PROpen}} open · {{.PRMerged}} merged)
+      Pull requests ( {{.PROpen}} open · {{.PRMerged}} merged )
     </text>
 
     {{- $px := $sectionX }}
