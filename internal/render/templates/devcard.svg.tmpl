@@ -7,9 +7,9 @@
     .card { fill: #0d1117; stroke: #30363d; stroke-width: 1; rx: 12; ry: 12; }
     .stat-card { fill: #161b22; stroke: #30363d; stroke-width: 1; rx: 6; ry: 6; }
     .title { fill: #e6edf3; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 18px; font-weight: 600; }
-    .subtitle { fill: #7d8590; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 13px; }
+    .subtitle { fill: #7d8590; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; }
     .stat-label { fill: #7d8590; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 12px; }
-    .stat-value { fill: #e6edf3; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 14px; font-weight: 600; }
+    .stat-value { fill: #e6edf3; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 15px; font-weight: 600; }
     .lang-label { fill: #e6edf3; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 12px; }
     .lang-dot { r: 4; }
     .footer { fill: #7d8590; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 11px; }
@@ -66,18 +66,19 @@
 
   <text class="subtitle" x="24" y="158" style="fill: #e6edf3;">Most used languages</text>
 
-  {{- $margin := 26.5 }}
-  {{- $svgWidth := float64 .Width }}
-  {{- $availableWidth := subf $svgWidth (mulf $margin 2.0) }}
-  {{- $startX := $margin }}
+  {{- $mainMargin := 24.0 }}
+  {{- $mainWidth := 748.0 }}
+  {{- $subtitleGap := 18.0 }}
+  
+  {{- $startX := $mainMargin }}
   {{- $barY := 176.0 }}
-  {{- $height := 8.0 }}
+  {{- $barHeight := 8.0 }}
   {{- $x := $startX }}
   {{- range $i, $lang := .Languages }}
     {{- if lt $i 10 }}
-      {{- $w := mulf $availableWidth (divf $lang.Percentage 100.0) }}
+      {{- $w := mulf $mainWidth (divf $lang.Percentage 100.0) }}
       {{- $colorIdx := $i }}
-      <rect x="{{$x}}" y="{{$barY}}" width="{{$w}}" height="{{$height}}" fill="{{index $.Colors $colorIdx}}" rx="1" />
+      <rect x="{{$x}}" y="{{$barY}}" width="{{$w}}" height="{{$barHeight}}" fill="{{index $.Colors $colorIdx}}" rx="1" />
       {{- $x = addf $x $w }}
     {{- end }}
   {{- end }}
@@ -101,42 +102,54 @@
   {{- end }}
 
 
-  <text class="subtitle" x="24" y="250" style="fill: #e6edf3;">Issues &amp; pull requests</text>
+  {{- $baseY := 250.0 }}
+  {{- if le (len .Languages) 5 }}
+    {{- $baseY = 230.0 }}
+  {{- end }}
 
-  {{- $sectionMargin := 26.5 }}
-  {{- $sectionWidth := subf (float64 .Width) (mulf $sectionMargin 2.0) }}
-  {{- $sectionX := $sectionMargin }}
-  {{- $barHeight := 8.0 }}
+  <text class="subtitle" x="24" y="{{$baseY}}" style="fill: #e6edf3;">Issues &amp; pull requests</text>
 
   {{- $issuesTotal := addf (float64 .IssuesOpen) (float64 .IssuesClosed) }}
+  
+  {{- $issuesLabelY := addf $baseY 26.0 }}
+
   {{- if gt $issuesTotal 0.0 }}
-    <text class="stat-label" x="24" y="270">
+    <text class="stat-label" x="24" y="{{$issuesLabelY}}">
       Issues ( {{.IssuesOpen}} open · {{.IssuesClosed}} closed )
     </text>
     
-    {{- $ix := $sectionX }}
-    {{- $openW := mulf $sectionWidth (divf (float64 .IssuesOpen) $issuesTotal) }}
-    <rect x="{{$ix}}" y="278" width="{{$openW}}" height="{{$barHeight}}" rx="1" fill="#22C55E" />
+    {{- $ix := $mainMargin }}
+    {{- $issueBarY := addf $issuesLabelY 8.0 }}
+    
+    {{- $openW := mulf $mainWidth (divf (float64 .IssuesOpen) $issuesTotal) }}
+    <rect x="{{$ix}}" y="{{$issueBarY}}" width="{{$openW}}" height="{{$barHeight}}" rx="1" fill="#22C55E" />
     {{- $ix = addf $ix $openW }}
-    {{- $closedW := mulf $sectionWidth (divf (float64 .IssuesClosed) $issuesTotal) }}
-    <rect x="{{$ix}}" y="278" width="{{$closedW}}" height="{{$barHeight}}" rx="1" fill="#EF4444" />
+    {{- $closedW := mulf $mainWidth (divf (float64 .IssuesClosed) $issuesTotal) }}
+    <rect x="{{$ix}}" y="{{$issueBarY}}" width="{{$closedW}}" height="{{$barHeight}}" rx="1" fill="#EF4444" />
+  {{- end }}
+
+  {{- $prLabelY := addf $issuesLabelY 42.0 }} 
+  {{- if eq $issuesTotal 0.0 }}
+      {{- $prLabelY = $issuesLabelY }}
   {{- end }}
 
   {{- $prTotal := addf (float64 .PROpen) (addf (float64 .PRMerged) (float64 .PRClosed)) }}
   {{- if gt $prTotal 0.0 }}
-    <text class="stat-label" x="24" y="305">
+    <text class="stat-label" x="24" y="{{$prLabelY}}">
       Pull requests ( {{.PROpen}} open · {{.PRMerged}} merged )
     </text>
 
-    {{- $px := $sectionX }}
-    {{- $prOpenW := mulf $sectionWidth (divf (float64 .PROpen) $prTotal) }}
-    <rect x="{{$px}}" y="313" width="{{$prOpenW}}" height="{{$barHeight}}" rx="1" fill="#FACC15" />
+    {{- $px := $mainMargin }}
+    {{- $prBarY := addf $prLabelY 8.0 }}
+    
+    {{- $prOpenW := mulf $mainWidth (divf (float64 .PROpen) $prTotal) }}
+    <rect x="{{$px}}" y="{{$prBarY}}" width="{{$prOpenW}}" height="{{$barHeight}}" rx="1" fill="#FACC15" />
     {{- $px = addf $px $prOpenW }}
-    {{- $prMergedW := mulf $sectionWidth (divf (float64 .PRMerged) $prTotal) }}
-    <rect x="{{$px}}" y="313" width="{{$prMergedW}}" height="{{$barHeight}}" rx="1" fill="#22C55E" />
+    {{- $prMergedW := mulf $mainWidth (divf (float64 .PRMerged) $prTotal) }}
+    <rect x="{{$px}}" y="{{$prBarY}}" width="{{$prMergedW}}" height="{{$barHeight}}" rx="1" fill="#22C55E" />
     {{- $px = addf $px $prMergedW }}
-    {{- $prClosedW := mulf $sectionWidth (divf (float64 .PRClosed) $prTotal) }}
-    <rect x="{{$px}}" y="313" width="{{$prClosedW}}" height="{{$barHeight}}" rx="1" fill="#EF4444" />
+    {{- $prClosedW := mulf $mainWidth (divf (float64 .PRClosed) $prTotal) }}
+    <rect x="{{$px}}" y="{{$prBarY}}" width="{{$prClosedW}}" height="{{$barHeight}}" rx="1" fill="#EF4444" />
   {{- end }}
 
   <text class="footer" x="{{divf (float64 .Width) 2.0}}" y="{{.Height}}" dy="-12" text-anchor="middle">

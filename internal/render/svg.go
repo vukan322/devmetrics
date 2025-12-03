@@ -12,7 +12,7 @@ import (
 
 const (
 	svgWidth  = 800
-	svgHeight = 360
+	svgHeight = 400
 )
 
 //go:embed templates/devcard.svg.tmpl
