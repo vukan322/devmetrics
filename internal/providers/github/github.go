@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"sort"
@@ -68,8 +69,26 @@ func (p *Provider) Fetch(ctx context.Context, handle string) (core.DevStats, err
 
 	contributedCount, err := p.fetchContributedRepos(ctx, handle)
 	if err != nil {
+		log.Printf("github: fetchContributedRepos error for %s: %v", handle, err)
 		contributedCount = 0
 	}
+
+	issueStats, err := p.fetchIssueStats(ctx, handle)
+	if err != nil {
+		log.Printf("github: fetchIssueStats error for %s: %v", handle, err)
+		issueStats = core.IssueStats{}
+	}
+	log.Printf("github: issueStats for %s: %+v", handle, issueStats)
+
+	prStats, err := p.fetchPRStats(ctx, handle)
+	if err != nil {
+		log.Printf("github: fetchPRStats error for %s: %v", handle, err)
+		prStats = core.PRStats{}
+	}
+	log.Printf("github: prStats for %s: %+v", handle, prStats)
+
+	fmt.Printf("github: issueStats for %s: %+v\n", handle, issueStats)
+	fmt.Printf("github: prStats for %s: %+v\n", handle, prStats)
 
 	topLangs, totalLangs := computeLanguages(repos)
 
@@ -100,6 +119,8 @@ func (p *Provider) Fetch(ctx context.Context, handle string) (core.DevStats, err
 		Activity: core.Activity{
 			ContributionsPerDay: nil,
 			TopLanguages:        topLangs,
+			Issues:              issueStats,
+			PullRequests:        prStats,
 		},
 	}
 
@@ -124,9 +145,13 @@ func formatJoinedAgo(created time.Time) string {
 	}
 	return fmt.Sprintf("%d years ago", y)
 }
-func (p *Provider) fetchContributedRepos(ctx context.Context, handle string) (int, error) {
-	endpoint := fmt.Sprintf("%s/search/issues?q=author:%s+type:pr+is:merged+-user:%s&per_page=1",
-		p.baseURL, url.QueryEscape(handle), url.QueryEscape(handle))
+
+func (p *Provider) searchCount(ctx context.Context, query string) (int, error) {
+	endpoint := fmt.Sprintf(
+		"%s/search/issues?q=%s&per_page=1",
+		p.baseURL,
+		url.QueryEscape(query),
+	)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
@@ -140,7 +165,11 @@ func (p *Provider) fetchContributedRepos(ctx context.Context, handle string) (in
 	}
 	defer resp.Body.Close()
 
+	log.Printf("github: searchCount url=%s status=%d", endpoint, resp.StatusCode)
+
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		log.Printf("github: searchCount error body=%s", string(body))
 		return 0, fmt.Errorf("unexpected status %d", resp.StatusCode)
 	}
 
@@ -151,7 +180,60 @@ func (p *Provider) fetchContributedRepos(ctx context.Context, handle string) (in
 		return 0, fmt.Errorf("decode response: %w", err)
 	}
 
+	log.Printf("github: searchCount query=%q total=%d", query, result.TotalCount)
+
 	return result.TotalCount, nil
+}
+
+func (p *Provider) fetchContributedRepos(ctx context.Context, handle string) (int, error) {
+	query := fmt.Sprintf("author:%s type:pr is:merged -user:%s", handle, handle)
+
+	count, err := p.searchCount(ctx, query)
+	if err != nil {
+		return 0, fmt.Errorf("search contributed repos: %w", err)
+	}
+
+	return count, nil
+}
+
+func (p *Provider) fetchIssueStats(ctx context.Context, handle string) (core.IssueStats, error) {
+	open, err := p.searchCount(ctx, fmt.Sprintf("involves:%s type:issue is:open", handle))
+	if err != nil {
+		return core.IssueStats{}, fmt.Errorf("search open issues: %w", err)
+	}
+
+	closed, err := p.searchCount(ctx, fmt.Sprintf("involves:%s type:issue is:closed", handle))
+	if err != nil {
+		return core.IssueStats{}, fmt.Errorf("search closed issues: %w", err)
+	}
+
+	return core.IssueStats{
+		Open:   open,
+		Closed: closed,
+	}, nil
+}
+
+func (p *Provider) fetchPRStats(ctx context.Context, handle string) (core.PRStats, error) {
+	open, err := p.searchCount(ctx, fmt.Sprintf("involves:%s type:pr is:open", handle))
+	if err != nil {
+		return core.PRStats{}, fmt.Errorf("search open PRs: %w", err)
+	}
+
+	merged, err := p.searchCount(ctx, fmt.Sprintf("involves:%s type:pr is:merged", handle))
+	if err != nil {
+		return core.PRStats{}, fmt.Errorf("search merged PRs: %w", err)
+	}
+
+	closed, err := p.searchCount(ctx, fmt.Sprintf("involves:%s type:pr is:closed -is:merged", handle))
+	if err != nil {
+		return core.PRStats{}, fmt.Errorf("search closed PRs: %w", err)
+	}
+
+	return core.PRStats{
+		Open:   open,
+		Merged: merged,
+		Closed: closed,
+	}, nil
 }
 
 func (p *Provider) fetchUser(ctx context.Context, handle string) (*githubUser, error) {

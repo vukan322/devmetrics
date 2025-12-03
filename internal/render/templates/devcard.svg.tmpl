@@ -100,6 +100,45 @@
     {{- end }}
   {{- end }}
 
+
+  <text class="subtitle" x="24" y="250" style="fill: #e6edf3;">Issues &amp; pull requests</text>
+
+  {{- $sectionMargin := 26.5 }}
+  {{- $sectionWidth := subf (float64 .Width) (mulf $sectionMargin 2.0) }}
+  {{- $sectionX := $sectionMargin }}
+  {{- $barHeight := 8.0 }}
+
+  {{- $issuesTotal := addf (float64 .IssuesOpen) (float64 .IssuesClosed) }}
+  {{- if gt $issuesTotal 0.0 }}
+    <text class="stat-label" x="24" y="270">
+      Issues ({{.IssuesOpen}} open · {{.IssuesClosed}} closed)
+    </text>
+    
+    {{- $ix := $sectionX }}
+    {{- $openW := mulf $sectionWidth (divf (float64 .IssuesOpen) $issuesTotal) }}
+    <rect x="{{$ix}}" y="278" width="{{$openW}}" height="{{$barHeight}}" rx="1" fill="#22C55E" />
+    {{- $ix = addf $ix $openW }}
+    {{- $closedW := mulf $sectionWidth (divf (float64 .IssuesClosed) $issuesTotal) }}
+    <rect x="{{$ix}}" y="278" width="{{$closedW}}" height="{{$barHeight}}" rx="1" fill="#EF4444" />
+  {{- end }}
+
+  {{- $prTotal := addf (float64 .PROpen) (addf (float64 .PRMerged) (float64 .PRClosed)) }}
+  {{- if gt $prTotal 0.0 }}
+    <text class="stat-label" x="24" y="305">
+      Pull requests ({{.PROpen}} open · {{.PRMerged}} merged)
+    </text>
+
+    {{- $px := $sectionX }}
+    {{- $prOpenW := mulf $sectionWidth (divf (float64 .PROpen) $prTotal) }}
+    <rect x="{{$px}}" y="313" width="{{$prOpenW}}" height="{{$barHeight}}" rx="1" fill="#FACC15" />
+    {{- $px = addf $px $prOpenW }}
+    {{- $prMergedW := mulf $sectionWidth (divf (float64 .PRMerged) $prTotal) }}
+    <rect x="{{$px}}" y="313" width="{{$prMergedW}}" height="{{$barHeight}}" rx="1" fill="#22C55E" />
+    {{- $px = addf $px $prMergedW }}
+    {{- $prClosedW := mulf $sectionWidth (divf (float64 .PRClosed) $prTotal) }}
+    <rect x="{{$px}}" y="313" width="{{$prClosedW}}" height="{{$barHeight}}" rx="1" fill="#EF4444" />
+  {{- end }}
+
   <text class="footer" x="{{divf (float64 .Width) 2.0}}" y="{{.Height}}" dy="-12" text-anchor="middle">
     devmetrics · github.com/vukan322/devmetrics
   </text>

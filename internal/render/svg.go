@@ -12,7 +12,7 @@ import (
 
 const (
 	svgWidth  = 800
-	svgHeight = 280
+	svgHeight = 360
 )
 
 //go:embed templates/devcard.svg.tmpl
@@ -33,8 +33,9 @@ var devcardTmpl = template.Must(
 )
 
 type devcardViewModel struct {
-	Width            int
-	Height           int
+	Width  int
+	Height int
+
 	Title            string
 	Subtitle         string
 	AvatarURL        string
@@ -43,9 +44,17 @@ type devcardViewModel struct {
 	Followers        int
 	ContributedRepos int
 	JoinedAgo        string
-	TotalLanguages   int
 	Languages        []core.LanguageStat
-	Colors           []string
+
+	TotalLanguages int
+	Colors         []string
+
+	IssuesOpen   int
+	IssuesClosed int
+
+	PROpen   int
+	PRMerged int
+	PRClosed int
 }
 
 func RenderSVG(stats core.DevStats) ([]byte, error) {
@@ -81,6 +90,11 @@ func RenderSVG(stats core.DevStats) ([]byte, error) {
 		TotalLanguages:   stats.Totals.TotalLanguages,
 		Languages:        langs,
 		Colors:           colors,
+		IssuesOpen:       stats.Activity.Issues.Open,
+		IssuesClosed:     stats.Activity.Issues.Closed,
+		PROpen:           stats.Activity.PullRequests.Open,
+		PRMerged:         stats.Activity.PullRequests.Merged,
+		PRClosed:         stats.Activity.PullRequests.Closed,
 	}
 	var buf bytes.Buffer
 	if err := devcardTmpl.Execute(&buf, vm); err != nil {

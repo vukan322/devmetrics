@@ -25,9 +25,22 @@ type LanguageStat struct {
 	Percentage float64
 }
 
+type IssueStats struct {
+	Open   int
+	Closed int
+}
+
+type PRStats struct {
+	Open   int
+	Merged int
+	Closed int
+}
+
 type Activity struct {
 	ContributionsPerDay map[time.Time]int
 	TopLanguages        []LanguageStat
+	Issues              IssueStats
+	PullRequests        PRStats
 }
 
 type DevStats struct {
