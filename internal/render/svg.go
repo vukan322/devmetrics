@@ -45,9 +45,7 @@ type devcardViewModel struct {
 	ContributedRepos int
 	JoinedAgo        string
 	Languages        []core.LanguageStat
-
-	TotalLanguages int
-	Colors         []string
+	TotalLanguages   int
 
 	IssuesOpen   int
 	IssuesClosed int
@@ -64,18 +62,6 @@ func RenderSVG(stats core.DevStats) ([]byte, error) {
 	}
 	subtitle := strings.Join(stats.Identity.Handles, " · ")
 	langs := stats.Activity.TopLanguages
-	colors := []string{
-		"#2563EB", // Blue
-		"#22C55E", // Green
-		"#F97316", // Orange
-		"#A855F7", // Purple
-		"#EF4444", // Red
-		"#06B6D4", // Teal
-		"#FACC15", // Yellow
-		"#EC4899", // Pink
-		"#4B5563", // Slate
-		"#9CA3AF", // Gray (Others)
-	}
 	vm := devcardViewModel{
 		Width:            svgWidth,
 		Height:           svgHeight,
@@ -89,7 +75,6 @@ func RenderSVG(stats core.DevStats) ([]byte, error) {
 		JoinedAgo:        stats.Totals.JoinedAgo,
 		TotalLanguages:   stats.Totals.TotalLanguages,
 		Languages:        langs,
-		Colors:           colors,
 		IssuesOpen:       stats.Activity.Issues.Open,
 		IssuesClosed:     stats.Activity.Issues.Closed,
 		PROpen:           stats.Activity.PullRequests.Open,

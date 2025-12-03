@@ -23,6 +23,7 @@ type Totals struct {
 type LanguageStat struct {
 	Name       string
 	Percentage float64
+	Color      string
 }
 
 type IssueStats struct {

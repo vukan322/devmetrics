@@ -380,9 +380,16 @@ func computeLanguages(repos []githubRepo) ([]core.LanguageStat, int) {
 	langs := make([]core.LanguageStat, 0, len(counts))
 	for name, c := range counts {
 		pct := float64(c) / float64(total) * 100.0
+
+		color, ok := languageColors[name]
+		if !ok {
+			color = "#586069"
+		}
+
 		langs = append(langs, core.LanguageStat{
 			Name:       name,
 			Percentage: pct,
+			Color:      color,
 		})
 	}
 
@@ -403,6 +410,7 @@ func computeLanguages(repos []githubRepo) ([]core.LanguageStat, int) {
 	result := append(top9, core.LanguageStat{
 		Name:       "Others",
 		Percentage: othersTotal,
+		Color:      "#586069",
 	})
 
 	return result, totalLanguages

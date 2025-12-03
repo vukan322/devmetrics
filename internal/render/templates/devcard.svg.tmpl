@@ -68,7 +68,7 @@
 
   {{- $mainMargin := 24.0 }}
   {{- $mainWidth := 748.0 }}
-  {{- $subtitleGap := 18.0 }}
+  {{- $subtitleGap := 18.0 }} 
   
   {{- $startX := $mainMargin }}
   {{- $barY := 176.0 }}
@@ -77,8 +77,7 @@
   {{- range $i, $lang := .Languages }}
     {{- if lt $i 10 }}
       {{- $w := mulf $mainWidth (divf $lang.Percentage 100.0) }}
-      {{- $colorIdx := $i }}
-      <rect x="{{$x}}" y="{{$barY}}" width="{{$w}}" height="{{$barHeight}}" fill="{{index $.Colors $colorIdx}}" rx="1" />
+      <rect x="{{$x}}" y="{{$barY}}" width="{{$w}}" height="{{$barHeight}}" fill="{{$lang.Color}}" rx="1" />
       {{- $x = addf $x $w }}
     {{- end }}
   {{- end }}
@@ -89,12 +88,11 @@
   {{- $perRow := 5 }}
   {{- range $i, $lang := .Languages }}
     {{- if lt $i 10 }}
-      {{- $colorIdx := $i }}
       {{- $row := divInt $i $perRow }}
       {{- $col := modInt $i $perRow }}
       {{- $currentX := addf $langX (mulf (float64 $col) $langSpacing) }}
       {{- $currentY := addf $langY (mulf (float64 $row) 20.0) }}
-      <circle class="lang-dot" cx="{{$currentX}}" cy="{{addf $currentY -3.0}}" fill="{{index $.Colors $colorIdx}}" />
+      <circle class="lang-dot" cx="{{$currentX}}" cy="{{addf $currentY -3.0}}" fill="{{$lang.Color}}" />
       <text class="lang-label" x="{{addf $currentX 10.0}}" y="{{$currentY}}">
         {{$lang.Name}} {{printf "%.0f" $lang.Percentage}}%
       </text>
@@ -122,10 +120,10 @@
     {{- $issueBarY := addf $issuesLabelY 8.0 }}
     
     {{- $openW := mulf $mainWidth (divf (float64 .IssuesOpen) $issuesTotal) }}
-    <rect x="{{$ix}}" y="{{$issueBarY}}" width="{{$openW}}" height="{{$barHeight}}" rx="1" fill="#22C55E" />
+    <rect x="{{$ix}}" y="{{$issueBarY}}" width="{{$openW}}" height="{{$barHeight}}" rx="1" fill="#238636" />
     {{- $ix = addf $ix $openW }}
     {{- $closedW := mulf $mainWidth (divf (float64 .IssuesClosed) $issuesTotal) }}
-    <rect x="{{$ix}}" y="{{$issueBarY}}" width="{{$closedW}}" height="{{$barHeight}}" rx="1" fill="#EF4444" />
+    <rect x="{{$ix}}" y="{{$issueBarY}}" width="{{$closedW}}" height="{{$barHeight}}" rx="1" fill="#da3633" />
   {{- end }}
 
   {{- $prLabelY := addf $issuesLabelY 42.0 }} 
@@ -143,13 +141,13 @@
     {{- $prBarY := addf $prLabelY 8.0 }}
     
     {{- $prOpenW := mulf $mainWidth (divf (float64 .PROpen) $prTotal) }}
-    <rect x="{{$px}}" y="{{$prBarY}}" width="{{$prOpenW}}" height="{{$barHeight}}" rx="1" fill="#FACC15" />
+    <rect x="{{$px}}" y="{{$prBarY}}" width="{{$prOpenW}}" height="{{$barHeight}}" rx="1" fill="#238636" />
     {{- $px = addf $px $prOpenW }}
     {{- $prMergedW := mulf $mainWidth (divf (float64 .PRMerged) $prTotal) }}
-    <rect x="{{$px}}" y="{{$prBarY}}" width="{{$prMergedW}}" height="{{$barHeight}}" rx="1" fill="#22C55E" />
+    <rect x="{{$px}}" y="{{$prBarY}}" width="{{$prMergedW}}" height="{{$barHeight}}" rx="1" fill="#8957e5" />
     {{- $px = addf $px $prMergedW }}
     {{- $prClosedW := mulf $mainWidth (divf (float64 .PRClosed) $prTotal) }}
-    <rect x="{{$px}}" y="{{$prBarY}}" width="{{$prClosedW}}" height="{{$barHeight}}" rx="1" fill="#EF4444" />
+    <rect x="{{$px}}" y="{{$prBarY}}" width="{{$prClosedW}}" height="{{$barHeight}}" rx="1" fill="#da3633" />
   {{- end }}
 
   <text class="footer" x="{{divf (float64 .Width) 2.0}}" y="{{.Height}}" dy="-12" text-anchor="middle">
