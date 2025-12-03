@@ -78,17 +78,12 @@ func (p *Provider) Fetch(ctx context.Context, handle string) (core.DevStats, err
 		log.Printf("github: fetchIssueStats error for %s: %v", handle, err)
 		issueStats = core.IssueStats{}
 	}
-	log.Printf("github: issueStats for %s: %+v", handle, issueStats)
 
 	prStats, err := p.fetchPRStats(ctx, handle)
 	if err != nil {
 		log.Printf("github: fetchPRStats error for %s: %v", handle, err)
 		prStats = core.PRStats{}
 	}
-	log.Printf("github: prStats for %s: %+v", handle, prStats)
-
-	fmt.Printf("github: issueStats for %s: %+v\n", handle, issueStats)
-	fmt.Printf("github: prStats for %s: %+v\n", handle, prStats)
 
 	topLangs, totalLangs := computeLanguages(repos)
 
@@ -165,11 +160,8 @@ func (p *Provider) searchCount(ctx context.Context, query string) (int, error) {
 	}
 	defer resp.Body.Close()
 
-	log.Printf("github: searchCount url=%s status=%d", endpoint, resp.StatusCode)
-
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
-		log.Printf("github: searchCount error body=%s", string(body))
+		_, _ = io.ReadAll(io.LimitReader(resp.Body, 512))
 		return 0, fmt.Errorf("unexpected status %d", resp.StatusCode)
 	}
 
@@ -179,8 +171,6 @@ func (p *Provider) searchCount(ctx context.Context, query string) (int, error) {
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return 0, fmt.Errorf("decode response: %w", err)
 	}
-
-	log.Printf("github: searchCount query=%q total=%d", query, result.TotalCount)
 
 	return result.TotalCount, nil
 }
