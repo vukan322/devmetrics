@@ -140,7 +140,7 @@
   {{- $prTotal := addf (float64 .PROpen) (addf (float64 .PRMerged) (float64 .PRClosed)) }}
   {{- if gt $prTotal 0.0 }}
     <text class="stat-label" x="24" y="{{$prLabelY}}">
-      Pull requests ( {{.PROpen}} open · {{.PRMerged}} merged )
+      Pull requests ( {{.PROpen}} open · {{.PRMerged}} merged · {{.PRClosed}} closed )
     </text>
 
     {{- $px := $mainMargin }}
