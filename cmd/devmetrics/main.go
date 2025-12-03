@@ -32,9 +32,9 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	token := os.Getenv("GITHUB_TOKEN")
+	token := os.Getenv("DEV_METRICS_TOKEN")
 	if token == "" {
-		log.Println("warning: GITHUB_TOKEN not set, using unauthenticated GitHub API (rate limited)")
+		log.Println("warning: DEV_METRICS_TOKEN not set, using unauthenticated GitHub API (rate limited)")
 	}
 
 	provider := githubprovider.New(token)
