@@ -1,6 +1,7 @@
 package github
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -77,6 +78,7 @@ func (p *Provider) Fetch(ctx context.Context, handle string) (core.DevStats, err
 				log.Printf("github: fetchPrivateRepos error for %s: %v", handle, err)
 			} else if len(privateRepos) > 0 {
 				repos = append(repos, privateRepos...)
+				log.Printf("github: appended %d private repos for %s", len(privateRepos), handle)
 			}
 		}
 	}
@@ -104,6 +106,33 @@ func (p *Provider) Fetch(ctx context.Context, handle string) (core.DevStats, err
 	privateCount := countPrivate(repos)
 	publicCount := user.PublicRepos
 
+	contribs := make(map[time.Time]int)
+	totalCommits := 0
+	currentStreak := 0
+	longestStreak := 0
+	commitsThisWeek := 0
+
+	if p.token != "" {
+		cData, cTotal, err := p.fetchContributions(ctx, handle)
+		if err != nil {
+			log.Printf("github: fetchContributions error for %s: %v", handle, err)
+		} else {
+			contribs = cData
+			totalCommits = cTotal
+			currentStreak, longestStreak = core.ComputeStreaks(contribs)
+
+			today := time.Now().UTC()
+			startOfToday := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
+			weekStart := startOfToday.AddDate(0, 0, -6)
+
+			for day, count := range contribs {
+				if !day.Before(weekStart) && !day.After(startOfToday) {
+					commitsThisWeek += count
+				}
+			}
+		}
+	}
+
 	totals := core.Totals{
 		PublicRepos:      publicCount,
 		PrivateRepos:     privateCount,
@@ -113,6 +142,10 @@ func (p *Provider) Fetch(ctx context.Context, handle string) (core.DevStats, err
 		ContributedRepos: contributedCount,
 		JoinedAgo:        formatJoinedAgo(user.CreatedAt),
 		TotalLanguages:   totalLangs,
+		Commits:          totalCommits,
+		CurrentStreak:    currentStreak,
+		LongestStreak:    longestStreak,
+		CommitsThisWeek:  commitsThisWeek,
 	}
 
 	avatarData, err := fetchAvatar(ctx, p.client, user.AvatarURL)
@@ -129,7 +162,7 @@ func (p *Provider) Fetch(ctx context.Context, handle string) (core.DevStats, err
 		},
 		Totals: totals,
 		Activity: core.Activity{
-			ContributionsPerDay: nil,
+			ContributionsPerDay: contribs,
 			TopLanguages:        topLangs,
 			Issues:              issueStats,
 			PullRequests:        prStats,
@@ -272,6 +305,103 @@ func (p *Provider) fetchUser(ctx context.Context, handle string) (*githubUser, e
 	}
 
 	return &u, nil
+}
+
+type contributionsResponse struct {
+	Data struct {
+		User struct {
+			ContributionsCollection struct {
+				TotalCommitContributions int `json:"totalCommitContributions"`
+				ContributionCalendar     struct {
+					Weeks []struct {
+						ContributionDays []struct {
+							Date              string `json:"date"`
+							ContributionCount int    `json:"contributionCount"`
+						} `json:"contributionDays"`
+					} `json:"weeks"`
+				} `json:"contributionCalendar"`
+			} `json:"contributionsCollection"`
+		} `json:"user"`
+	} `json:"data"`
+	Errors []struct {
+		Message string `json:"message"`
+	} `json:"errors"`
+}
+
+func (p *Provider) fetchContributions(ctx context.Context, handle string) (map[time.Time]int, int, error) {
+	body := map[string]any{
+		"query": `
+      query($login: String!) {
+        user(login: $login) {
+          contributionsCollection {
+            totalCommitContributions
+            contributionCalendar {
+              weeks {
+                contributionDays {
+                  date
+                  contributionCount
+                }
+              }
+            }
+          }
+        }
+      }
+    `,
+		"variables": map[string]any{
+			"login": handle,
+		},
+	}
+
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, 0, fmt.Errorf("github: marshal graphql body: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, p.baseURL+"/graphql", bytes.NewReader(buf))
+	if err != nil {
+		return nil, 0, fmt.Errorf("github: new graphql request: %w", err)
+	}
+	p.applyHeaders(req)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return nil, 0, fmt.Errorf("github: do graphql request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		bodyBytes, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		return nil, 0, fmt.Errorf("github: graphql unexpected status %d body=%s", resp.StatusCode, string(bodyBytes))
+	}
+
+	var r contributionsResponse
+	if err := json.NewDecoder(resp.Body).Decode(&r); err != nil {
+		return nil, 0, fmt.Errorf("github: decode graphql response: %w", err)
+	}
+
+	if len(r.Errors) > 0 {
+		return nil, 0, fmt.Errorf("github: graphql error: %s", r.Errors[0].Message)
+	}
+
+	coll := r.Data.User.ContributionsCollection
+	m := make(map[time.Time]int)
+
+	for _, w := range coll.ContributionCalendar.Weeks {
+		for _, d := range w.ContributionDays {
+			if d.ContributionCount <= 0 {
+				continue
+			}
+			t, err := time.Parse("2006-01-02", d.Date)
+			if err != nil {
+				continue
+			}
+			day := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
+			m[day] += d.ContributionCount
+		}
+	}
+
+	return m, coll.TotalCommitContributions, nil
 }
 
 func (p *Provider) fetchAuthenticatedUser(ctx context.Context) (*githubUser, error) {

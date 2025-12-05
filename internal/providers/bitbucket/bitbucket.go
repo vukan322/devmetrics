@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"sort"
 	"time"
 
 	"github.com/vukan322/devmetrics/internal/core"
@@ -173,39 +172,4 @@ func (p *Provider) applyAuth(req *http.Request) {
 
 	req.Header.Set("Authorization", "Basic "+encoded)
 	req.Header.Set("Accept", "application/json")
-}
-
-func computeLanguages(repos []bitbucketRepo) ([]core.LanguageStat, int) {
-	counts := make(map[string]int)
-	for _, r := range repos {
-		if r.Language == "" {
-			continue
-		}
-		counts[r.Language]++
-	}
-
-	if len(counts) == 0 {
-		return nil, 0
-	}
-
-	total := 0
-	for _, c := range counts {
-		total += c
-	}
-
-	langs := make([]core.LanguageStat, 0, len(counts))
-	for name, c := range counts {
-		pct := float64(c) / float64(total) * 100.0
-		langs = append(langs, core.LanguageStat{
-			Name:       name,
-			Percentage: pct,
-			Color:      "#586069",
-		})
-	}
-
-	sort.Slice(langs, func(i, j int) bool {
-		return langs[i].Percentage > langs[j].Percentage
-	})
-
-	return langs, len(langs)
 }

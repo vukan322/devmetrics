@@ -20,6 +20,10 @@ type Totals struct {
 	ContributedRepos int
 	JoinedAgo        string
 	TotalLanguages   int
+	Commits          int
+	CurrentStreak    int
+	LongestStreak    int
+	CommitsThisWeek  int
 }
 
 type LanguageStat struct {

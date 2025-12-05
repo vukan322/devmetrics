@@ -55,6 +55,11 @@ type devcardViewModel struct {
 	PROpen   int
 	PRMerged int
 	PRClosed int
+
+	Commits         int
+	CurrentStreak   int
+	LongestStreak   int
+	CommitsThisWeek int
 }
 
 func RenderSVG(stats core.DevStats) ([]byte, error) {
@@ -85,6 +90,10 @@ func RenderSVG(stats core.DevStats) ([]byte, error) {
 		PROpen:           stats.Activity.PullRequests.Open,
 		PRMerged:         stats.Activity.PullRequests.Merged,
 		PRClosed:         stats.Activity.PullRequests.Closed,
+		Commits:          stats.Totals.Commits,
+		CurrentStreak:    stats.Totals.CurrentStreak,
+		LongestStreak:    stats.Totals.LongestStreak,
+		CommitsThisWeek:  stats.Totals.CommitsThisWeek,
 	}
 
 	var buf bytes.Buffer

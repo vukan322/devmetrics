@@ -16,6 +16,7 @@ func MergeStats(primary, secondary DevStats) DevStats {
 	merged.Totals.Followers += secondary.Totals.Followers
 	merged.Totals.Following += secondary.Totals.Following
 	merged.Totals.ContributedRepos += secondary.Totals.ContributedRepos
+	merged.Totals.Commits += secondary.Totals.Commits
 
 	merged.Activity.Issues.Open += secondary.Activity.Issues.Open
 	merged.Activity.Issues.Closed += secondary.Activity.Issues.Closed
@@ -39,6 +40,10 @@ func MergeStats(primary, secondary DevStats) DevStats {
 	)
 	merged.Activity.TopLanguages = langs
 	merged.Totals.TotalLanguages = totalLangs
+
+	current, longest := ComputeStreaks(merged.Activity.ContributionsPerDay)
+	merged.Totals.CurrentStreak = current
+	merged.Totals.LongestStreak = longest
 
 	return merged
 }
@@ -100,4 +105,62 @@ func mergeLanguageStats(a, b []LanguageStat) ([]LanguageStat, int) {
 	})
 
 	return result, len(result)
+}
+
+func ComputeStreaks(contribs map[time.Time]int) (int, int) {
+	if len(contribs) == 0 {
+		return 0, 0
+	}
+
+	normalized := make(map[time.Time]int, len(contribs))
+	for t, c := range contribs {
+		d := time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, time.UTC)
+		normalized[d] += c
+	}
+
+	var dates []time.Time
+	for d := range normalized {
+		dates = append(dates, d)
+	}
+	sort.Slice(dates, func(i, j int) bool {
+		return dates[i].Before(dates[j])
+	})
+
+	today := time.Now().UTC()
+	todayDate := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
+
+	current := 0
+	for d := todayDate; ; d = d.AddDate(0, 0, -1) {
+		if normalized[d] <= 0 {
+			break
+		}
+		current++
+	}
+
+	longest := 0
+	seen := make(map[time.Time]bool)
+
+	for _, d := range dates {
+		if seen[d] {
+			continue
+		}
+		if normalized[d] <= 0 {
+			continue
+		}
+		prev := d.AddDate(0, 0, -1)
+		if normalized[prev] > 0 {
+			continue
+		}
+
+		length := 0
+		for cur := d; normalized[cur] > 0; cur = cur.AddDate(0, 0, 1) {
+			seen[cur] = true
+			length++
+		}
+		if length > longest {
+			longest = length
+		}
+	}
+
+	return current, longest
 }
