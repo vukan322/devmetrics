@@ -46,29 +46,31 @@
   <text class="title" x="80" y="40">{{.Title}}</text>
   <text class="subtitle" x="80" y="62">{{.Subtitle}}</text>
 
-  <rect class="stat-card" x="24" y="88" width="108" height="44" />
-  <text class="stat-label" x="78" y="104" text-anchor="middle">Repos</text>
-  <text class="stat-value" x="78" y="122" text-anchor="middle">{{.Repos}}</text>
+  <rect class="stat-card" x="24" y="88" width="140" height="44" />
+  <text class="stat-label" x="94" y="104" text-anchor="middle">Repos</text>
+  <text class="stat-value" x="94" y="122" text-anchor="middle">
+    {{.Repos}} pub · {{.PrivateRepos}} priv
+  </text>
 
-  <rect class="stat-card" x="152" y="88" width="108" height="44" />
-  <text class="stat-label" x="206" y="104" text-anchor="middle">Stars</text>
-  <text class="stat-value" x="206" y="122" text-anchor="middle">{{.Stars}}</text>
+  <rect class="stat-card" x="179" y="88" width="108" height="44" />
+  <text class="stat-label" x="233" y="104" text-anchor="middle">Stars</text>
+  <text class="stat-value" x="233" y="122" text-anchor="middle">{{.Stars}}</text>
 
-  <rect class="stat-card" x="280" y="88" width="108" height="44" />
-  <text class="stat-label" x="334" y="104" text-anchor="middle">Followers</text>
-  <text class="stat-value" x="334" y="122" text-anchor="middle">{{.Followers}}</text>
+  <rect class="stat-card" x="302" y="88" width="108" height="44" />
+  <text class="stat-label" x="356" y="104" text-anchor="middle">Followers</text>
+  <text class="stat-value" x="356" y="122" text-anchor="middle">{{.Followers}}</text>
 
-  <rect class="stat-card" x="408" y="88" width="108" height="44" />
-  <text class="stat-label" x="462" y="104" text-anchor="middle">Contributed</text>
-  <text class="stat-value" x="462" y="122" text-anchor="middle">{{.ContributedRepos}}</text>
+  <rect class="stat-card" x="425" y="88" width="108" height="44" />
+  <text class="stat-label" x="479" y="104" text-anchor="middle">Contributed</text>
+  <text class="stat-value" x="479" y="122" text-anchor="middle">{{.ContributedRepos}}</text>
 
-  <rect class="stat-card" x="536" y="88" width="108" height="44" />
-  <text class="stat-label" x="590" y="104" text-anchor="middle">Joined</text>
-  <text class="stat-value" x="590" y="122" text-anchor="middle">{{.JoinedAgo}}</text>
+  <rect class="stat-card" x="548" y="88" width="108" height="44" />
+  <text class="stat-label" x="602" y="104" text-anchor="middle">Joined</text>
+  <text class="stat-value" x="602" y="122" text-anchor="middle">{{.JoinedAgo}}</text>
 
-  <rect class="stat-card" x="664" y="88" width="108" height="44" />
-  <text class="stat-label" x="718" y="104" text-anchor="middle">Languages</text>
-  <text class="stat-value" x="718" y="122" text-anchor="middle">{{.TotalLanguages}}</text>
+  <rect class="stat-card" x="671" y="88" width="108" height="44" />
+  <text class="stat-label" x="725" y="104" text-anchor="middle">Languages</text>
+  <text class="stat-value" x="725" y="122" text-anchor="middle">{{.TotalLanguages}}</text>
 
   <text class="subtitle" x="24" y="158" style="fill: #e6edf3;">Most used languages</text>
 

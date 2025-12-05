@@ -67,6 +67,21 @@ func (p *Provider) Fetch(ctx context.Context, handle string) (core.DevStats, err
 		return core.DevStats{}, fmt.Errorf("github: fetch repos: %w", err)
 	}
 
+	if p.token != "" {
+		authUser, err := p.fetchAuthenticatedUser(ctx)
+		if err != nil {
+			log.Printf("github: fetchAuthenticatedUser failed: %v", err)
+		} else if strings.EqualFold(authUser.Login, handle) {
+			privateRepos, err := p.fetchPrivateRepos(ctx)
+			if err != nil {
+				log.Printf("github: fetchPrivateRepos error for %s: %v", handle, err)
+			} else if len(privateRepos) > 0 {
+				repos = append(repos, privateRepos...)
+				log.Printf("github: appended %d private repos for %s", len(privateRepos), handle)
+			}
+		}
+	}
+
 	contributedCount, err := p.fetchContributedRepos(ctx, handle)
 	if err != nil {
 		log.Printf("github: fetchContributedRepos error for %s: %v", handle, err)
@@ -87,9 +102,12 @@ func (p *Provider) Fetch(ctx context.Context, handle string) (core.DevStats, err
 
 	topLangs, totalLangs := computeLanguages(repos)
 
+	privateCount := countPrivate(repos)
+	publicCount := user.PublicRepos
+
 	totals := core.Totals{
-		PublicRepos:      user.PublicRepos,
-		PrivateRepos:     countPrivate(repos),
+		PublicRepos:      publicCount,
+		PrivateRepos:     privateCount,
 		Stars:            sumStars(repos),
 		Followers:        user.Followers,
 		Following:        user.Following,
@@ -102,6 +120,15 @@ func (p *Provider) Fetch(ctx context.Context, handle string) (core.DevStats, err
 	if err != nil {
 		avatarData = ""
 	}
+
+	log.Printf(
+		"github: fetched user %q repos=%d public=%d private=%d stars=%d",
+		user.Login,
+		len(repos),
+		publicCount,
+		privateCount,
+		totals.Stars,
+	)
 
 	stats := core.DevStats{
 		Identity: core.Identity{
@@ -161,7 +188,8 @@ func (p *Provider) searchCount(ctx context.Context, query string) (int, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		_, _ = io.ReadAll(io.LimitReader(resp.Body, 512))
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
+		log.Printf("github: searchCount error body=%s", string(body))
 		return 0, fmt.Errorf("unexpected status %d", resp.StatusCode)
 	}
 
@@ -256,6 +284,38 @@ func (p *Provider) fetchUser(ctx context.Context, handle string) (*githubUser, e
 	return &u, nil
 }
 
+func (p *Provider) fetchAuthenticatedUser(ctx context.Context) (*githubUser, error) {
+	endpoint := fmt.Sprintf("%s/user", p.baseURL)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return nil, fmt.Errorf("github: new auth user request: %w", err)
+	}
+	p.applyHeaders(req)
+
+	resp, err := p.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("github: do auth user request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusUnauthorized {
+		return nil, fmt.Errorf("github: unauthorized when fetching authenticated user")
+	}
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("github: unexpected status %d from %s", resp.StatusCode, endpoint)
+	}
+
+	var u githubUser
+	if err := json.NewDecoder(resp.Body).Decode(&u); err != nil {
+		return nil, fmt.Errorf("github: decode auth user response: %w", err)
+	}
+
+	log.Printf("github: authenticated as %q", u.Login)
+
+	return &u, nil
+}
+
 func (p *Provider) fetchRepos(ctx context.Context, handle string) ([]githubRepo, error) {
 	var allRepos []githubRepo
 	nextURL := fmt.Sprintf("%s/users/%s/repos?per_page=100&sort=updated", p.baseURL, url.PathEscape(handle))
@@ -290,6 +350,43 @@ func (p *Provider) fetchRepos(ctx context.Context, handle string) ([]githubRepo,
 	}
 
 	return allRepos, nil
+}
+
+func (p *Provider) fetchPrivateRepos(ctx context.Context) ([]githubRepo, error) {
+	var all []githubRepo
+
+	nextURL := fmt.Sprintf("%s/user/repos?per_page=100&visibility=private", p.baseURL)
+
+	for nextURL != "" {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, nextURL, nil)
+		if err != nil {
+			return nil, fmt.Errorf("github: new private repos request: %w", err)
+		}
+		p.applyHeaders(req)
+
+		resp, err := p.client.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("github: do private repos request: %w", err)
+		}
+
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			resp.Body.Close()
+			return nil, fmt.Errorf("github: unexpected status %d from %s", resp.StatusCode, nextURL)
+		}
+
+		var repos []githubRepo
+		if err := json.NewDecoder(resp.Body).Decode(&repos); err != nil {
+			resp.Body.Close()
+			return nil, fmt.Errorf("github: decode private repos response: %w", err)
+		}
+		resp.Body.Close()
+
+		all = append(all, repos...)
+
+		nextURL = extractNextLink(resp.Header.Get("Link"))
+	}
+
+	return all, nil
 }
 
 func fetchAvatar(ctx context.Context, client *http.Client, avatarURL string) (string, error) {
@@ -421,8 +518,8 @@ func extractNextLink(linkHeader string) string {
 	for _, link := range splitLinks(linkHeader) {
 		parts := splitLinkParts(link)
 		if len(parts) == 2 && contains(parts[1], `rel="next"`) {
-			url := strings.Trim(strings.TrimSpace(parts[0]), "<>")
-			return url
+			u := strings.Trim(strings.TrimSpace(parts[0]), "<>")
+			return u
 		}
 	}
 	return ""

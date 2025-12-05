@@ -36,10 +36,12 @@ type devcardViewModel struct {
 	Width  int
 	Height int
 
-	Title            string
-	Subtitle         string
-	AvatarURL        string
+	Title     string
+	Subtitle  string
+	AvatarURL string
+
 	Repos            int
+	PrivateRepos     int
 	Stars            int
 	Followers        int
 	ContributedRepos int
@@ -61,7 +63,9 @@ func RenderSVG(stats core.DevStats) ([]byte, error) {
 		title = stats.Identity.Username
 	}
 	subtitle := strings.Join(stats.Identity.Handles, " · ")
+
 	langs := stats.Activity.TopLanguages
+
 	vm := devcardViewModel{
 		Width:            svgWidth,
 		Height:           svgHeight,
@@ -69,6 +73,7 @@ func RenderSVG(stats core.DevStats) ([]byte, error) {
 		Subtitle:         subtitle,
 		AvatarURL:        stats.Identity.Avatar,
 		Repos:            stats.Totals.PublicRepos,
+		PrivateRepos:     stats.Totals.PrivateRepos,
 		Stars:            stats.Totals.Stars,
 		Followers:        stats.Totals.Followers,
 		ContributedRepos: stats.Totals.ContributedRepos,
@@ -81,6 +86,7 @@ func RenderSVG(stats core.DevStats) ([]byte, error) {
 		PRMerged:         stats.Activity.PullRequests.Merged,
 		PRClosed:         stats.Activity.PullRequests.Closed,
 	}
+
 	var buf bytes.Buffer
 	if err := devcardTmpl.Execute(&buf, vm); err != nil {
 		return nil, fmt.Errorf("render svg: %w", err)
