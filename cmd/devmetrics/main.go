@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/vukan322/devmetrics/internal/core"
 	bitbucketprovider "github.com/vukan322/devmetrics/internal/providers/bitbucket"
 	githubprovider "github.com/vukan322/devmetrics/internal/providers/github"
+	gitlabprovider "github.com/vukan322/devmetrics/internal/providers/gitlab"
 	"github.com/vukan322/devmetrics/internal/render"
 )
 
@@ -71,6 +73,22 @@ func main() {
 		log.Printf("info: Bitbucket env vars not set or incomplete; skipping Bitbucket provider")
 	}
 
+	glUser := os.Getenv("DEV_METRICS_GITLAB_USER")
+	glToken := os.Getenv("DEV_METRICS_GITLAB_TOKEN")
+
+	if glUser != "" {
+		gitlabProvider := gitlabprovider.New(glToken, glUser)
+
+		glStats, err := gitlabProvider.Fetch(ctx, glUser)
+		if err != nil {
+			log.Printf("warning: provider %s failed: %v", gitlabProvider.Name(), err)
+		} else {
+			stats = core.MergeStats(stats, glStats)
+		}
+	} else {
+		log.Printf("info: GitLab env vars not set; skipping GitLab provider")
+	}
+
 	svg, err := render.RenderSVG(stats)
 	if err != nil {
 		log.Fatalf("failed to render SVG: %v", err)
@@ -80,5 +98,20 @@ func main() {
 		log.Fatalf("failed to write SVG to %s: %v", output, err)
 	}
 
-	fmt.Printf("devmetrics: generated %s for user %q via %s provider\n", output, user, githubProvider.Name())
+	providersUsed := []string{"GitHub"}
+
+	if bbEmail != "" && bbToken != "" && bbWorkspace != "" {
+		providersUsed = append(providersUsed, "Bitbucket")
+	}
+
+	if glUser != "" && glToken != "" {
+		providersUsed = append(providersUsed, "GitLab")
+	}
+
+	fmt.Printf(
+		"devmetrics: generated %s for user %q via providers: %s\n",
+		output,
+		user,
+		strings.Join(providersUsed, ", "),
+	)
 }

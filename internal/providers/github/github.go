@@ -77,7 +77,6 @@ func (p *Provider) Fetch(ctx context.Context, handle string) (core.DevStats, err
 				log.Printf("github: fetchPrivateRepos error for %s: %v", handle, err)
 			} else if len(privateRepos) > 0 {
 				repos = append(repos, privateRepos...)
-				log.Printf("github: appended %d private repos for %s", len(privateRepos), handle)
 			}
 		}
 	}
@@ -120,15 +119,6 @@ func (p *Provider) Fetch(ctx context.Context, handle string) (core.DevStats, err
 	if err != nil {
 		avatarData = ""
 	}
-
-	log.Printf(
-		"github: fetched user %q repos=%d public=%d private=%d stars=%d",
-		user.Login,
-		len(repos),
-		publicCount,
-		privateCount,
-		totals.Stars,
-	)
 
 	stats := core.DevStats{
 		Identity: core.Identity{
@@ -310,8 +300,6 @@ func (p *Provider) fetchAuthenticatedUser(ctx context.Context) (*githubUser, err
 	if err := json.NewDecoder(resp.Body).Decode(&u); err != nil {
 		return nil, fmt.Errorf("github: decode auth user response: %w", err)
 	}
-
-	log.Printf("github: authenticated as %q", u.Login)
 
 	return &u, nil
 }

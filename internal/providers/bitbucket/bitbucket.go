@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"sort"
@@ -96,8 +95,6 @@ func (p *Provider) Fetch(ctx context.Context, handle string) (core.DevStats, err
 		Totals:   totals,
 		Activity: core.Activity{},
 	}
-
-	log.Printf("bitbucket: fetched user %q repos=%d public=%d private=%d", user.Nickname, len(repos), publicRepos, privateRepos)
 
 	return stats, nil
 }
