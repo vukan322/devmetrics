@@ -17,6 +17,7 @@ func MergeStats(primary, secondary DevStats) DevStats {
 	merged.Totals.Following += secondary.Totals.Following
 	merged.Totals.ContributedRepos += secondary.Totals.ContributedRepos
 	merged.Totals.Commits += secondary.Totals.Commits
+	merged.Totals.CommitsThisWeek += secondary.Totals.CommitsThisWeek
 
 	merged.Activity.Issues.Open += secondary.Activity.Issues.Open
 	merged.Activity.Issues.Closed += secondary.Activity.Issues.Closed
@@ -126,15 +127,22 @@ func ComputeStreaks(contribs map[time.Time]int) (int, int) {
 		return dates[i].Before(dates[j])
 	})
 
-	today := time.Now().UTC()
-	todayDate := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
+	now := time.Now().UTC()
+	todayDate := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	yesterdayDate := todayDate.AddDate(0, 0, -1)
 
 	current := 0
-	for d := todayDate; ; d = d.AddDate(0, 0, -1) {
-		if normalized[d] <= 0 {
-			break
+	start := todayDate
+	if normalized[start] <= 0 {
+		start = yesterdayDate
+	}
+	if normalized[start] > 0 {
+		for d := start; ; d = d.AddDate(0, 0, -1) {
+			if normalized[d] <= 0 {
+				break
+			}
+			current++
 		}
-		current++
 	}
 
 	longest := 0
