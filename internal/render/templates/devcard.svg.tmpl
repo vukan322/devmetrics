@@ -98,14 +98,13 @@
   </text>
 
   <text class="stat-label" x="{{$blockX}}" y="{{addf 58.0 $streakYOff}}" text-anchor="start">
-    <tspan class="stat-value" style="font-size: 13px; font-weight:600;">{{.CommitsThisWeek}}</tspan>
-    <tspan class="stat-label"> commits this week</tspan>
-  </text>
-
-  
-  <text class="stat-label" x="{{$blockX}}" y="{{addf 80.0 $streakYOff}}" text-anchor="start">
     <tspan class="stat-value" style="font-size: 13px; font-weight:600;">{{.LongestStreak}}</tspan>
     <tspan class="stat-label"> longest streak</tspan>
+  </text>
+
+  <text class="stat-label" x="{{$blockX}}" y="{{addf 80.0 $streakYOff}}" text-anchor="start">
+    <tspan class="stat-value" style="font-size: 13px; font-weight:600;">{{.CommitsThisWeek}}</tspan>
+    <tspan class="stat-label"> commits this week</tspan>
   </text>
   
   {{- $startX := $mainMargin }}
